@@ -28,8 +28,14 @@ app.get('/', (request, response) => {
   response.send('<p>Jaahas</p>')
 })
 
-app.get('/persons', (request, response) => {
+app.get('/api/persons', (request, response) => {
   response.json(persons)
+})
+
+app.get('/info', (request, response) => {
+  const date = `<p>${new Date()}</p>`
+  const info = `<p>puhelinluettelossa on ${persons.length} henkilön tiedot</p>`
+  response.send(info+date)
 })
 
 const PORT = 3001
