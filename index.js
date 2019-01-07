@@ -4,6 +4,8 @@ const bodyParser = require('body-parser');
 const morgan = require('morgan');
 const cors = require('cors');
 
+const Person = require('./models/person');
+
 app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static('build'));
@@ -42,17 +44,19 @@ app.get('/', (request, response) => {
 });
 
 app.get('/api/persons', (request, response) => {
-  response.json(persons);
+  Person.find({}).then(persons => {
+    response.json(persons.map(Person.format));
+  });
 });
 
 app.get('/api/persons/:id', (request, response) => {
-  const id = Number(request.params.id);
-  const person = persons.find(person => person.id === id);
-  if (person) {
-    response.json(person);
-  } else {
-    response.status(404).end();
-  }
+  Person.findById(request.params.id).then(person => {
+    if (person) {
+      response.json(Person.format(person));
+    } else {
+      response.status(404).end();
+    }
+  });
 });
 
 app.get('/info', (request, response) => {
@@ -69,6 +73,7 @@ const generateRandomId = (min, max) => {
 
 app.post('/api/persons', (request, response) => {
   const body = request.body;
+
   if (body.name === undefined || body.number === undefined) {
     return response.status(400).json({ error: 'name or number missing' });
   }
@@ -77,14 +82,14 @@ app.post('/api/persons', (request, response) => {
     return response.status(400).json({ error: 'name already exists' });
   }
 
-  const person = {
+  const person = new Person({
     name: body.name,
-    number: body.number,
-    id: generateRandomId(1, 100)
-  };
+    number: body.number
+  });
 
-  persons = persons.concat(person);
-  response.json(person);
+  person.save().then(savedPerson => {
+    response.json(Person.format(savedPerson));
+  });
 });
 
 app.delete('/api/persons/:id', (request, response) => {
