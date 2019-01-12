@@ -16,29 +16,6 @@ app.use(
   morgan(':method :url :data :status :res[content-length] - :response-time ms')
 )
 
-let persons = [
-  // {
-  //   name: 'Arto Hellas',
-  //   number: '040-123456',
-  //   id: 1
-  // },
-  // {
-  //   name: 'Martti Tienari',
-  //   number: '040-123456',
-  //   id: 2
-  // },
-  // {
-  //   name: 'Arto Järvinen',
-  //   number: '040-123456',
-  //   id: 3
-  // },
-  // {
-  //   name: 'Lea Kutvonen',
-  //   number: '040-123456',
-  //   id: 4
-  // }
-]
-
 app.get('/', (request, response) => {
   response.send('<p>Jaahas</p>')
 })
@@ -60,9 +37,11 @@ app.get('/api/persons/:id', (request, response) => {
 })
 
 app.get('/info', (request, response) => {
-  const date = `<p>${new Date()}</p>`
-  const info = `<p>puhelinluettelossa on ${persons.length} henkilön tiedot</p>`
-  response.send(info + date)
+  Person.estimatedDocumentCount({}).then(count => {
+    const date = `<p>${new Date()}</p>`
+    const info = `<p>Puhelinluettelossa on ${count} henkilön tiedot</p>`
+    response.send(info + date)
+  })
 })
 
 app.post('/api/persons', (request, response) => {
@@ -71,10 +50,6 @@ app.post('/api/persons', (request, response) => {
   if (body.name === undefined || body.number === undefined) {
     return response.status(400).json({ error: 'name or number missing' })
   }
-
-  // if (persons.find(person => person.name === body.name)) {
-  //   return response.status(400).json({ error: 'name already exists' })
-  // }
 
   const person = new Person({
     name: body.name,
@@ -94,8 +69,7 @@ app.put('/api/persons/:id', (request, response) => {
     number: body.number
   }
 
-  Person
-    .findOneAndUpdate({ _id: request.params.id }, person)
+  Person.findOneAndUpdate({ _id: request.params.id }, person)
     .then(newPerson => {
       response.json(Person.format(newPerson))
     })
