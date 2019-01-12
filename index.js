@@ -86,14 +86,33 @@ app.post('/api/persons', (request, response) => {
   })
 })
 
+app.put('/api/persons/:id', (request, response) => {
+  const body = request.body
+
+  const person = {
+    name: body.name,
+    number: body.number
+  }
+
+  Person
+    .findOneAndUpdate({ _id: request.params.id }, person)
+    .then(newPerson => {
+      response.json(Person.format(newPerson))
+    })
+    .catch(error => {
+      console.log(error)
+      response.status(400).send({ error: 'Id not found' })
+    })
+})
+
 app.delete('/api/persons/:id', (request, response) => {
-  try {
-    Person.findOneAndDelete({ _id: request.params.id }).then(res => {
+  Person.findByIdAndRemove(request.params.id)
+    .then(result => {
       response.status(204).end()
     })
-  } catch (e) {
-    console.log(e)
-  }
+    .catch(error => {
+      response.status(400).send({ error: 'Id not found' })
+    })
 })
 
 const PORT = process.env.PORT || 3001
