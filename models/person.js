@@ -1,16 +1,19 @@
 const mongoose = require('mongoose')
 const Schema = mongoose.Schema
 
-if (process.env.NODE_ENV !== 'production') {
-  require('dotenv').config()
-}
+const config = require('../utils/config')
 
-const url = process.env.MONGODB_URI
-
-mongoose.connect(
-  url,
-  { useNewUrlParser: true }
-)
+mongoose
+  .connect(
+    config.mongoUrl,
+    { useNewUrlParser: true }
+  )
+  .then(() => {
+    console.log('connected to database', config.mongoUrl)
+  })
+  .catch(err => {
+    console.log(err)
+  })
 
 let personSchema = new Schema({ name: String, number: String, id: String })
 

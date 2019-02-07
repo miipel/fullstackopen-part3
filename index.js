@@ -1,95 +1,39 @@
+const http = require('http')
 const express = require('express')
 const app = express()
 const bodyParser = require('body-parser')
-const morgan = require('morgan')
 const cors = require('cors')
-
-const Person = require('./models/person')
+// const morgan = require('morgan')
+const mongoose = require('mongoose')
+const middleware = require('./utils/middleware')
+const personsRouter = require('./controllers/persons')
+const config = require('./utils/config')
 
 app.use(cors())
 app.use(bodyParser.json())
 app.use(express.static('build'))
-morgan.token('data', (req, res) => {
-  return JSON.stringify(req.body)
-})
-app.use(
-  morgan(':method :url :data :status :res[content-length] - :response-time ms')
-)
+app.use(middleware.logger)
+// morgan.token('data', (req, res) => {
+//   return JSON.stringify(req.body)
+// })
+// app.use(
+//   morgan(':method :url :data :status :res[content-length] - :response-time ms')
+// )
 
-app.get('/', (request, response) => {
-  response.send('<p>Jaahas</p>')
-})
+app.use('/api/persons', personsRouter)
 
-app.get('/api/persons', (request, response) => {
-  Person.find({}).then(persons => {
-    response.json(persons.map(Person.format))
-  })
-})
+app.use(middleware.error)
 
-app.get('/api/persons/:id', (request, response) => {
-  Person.findById(request.params.id).then(person => {
-    if (person) {
-      response.json(Person.format(person))
-    } else {
-      response.status(404).end()
-    }
-  })
+const server = http.createServer(app)
+
+server.listen(config.port, () => {
+  console.log(`Server running on port ${config.port}`)
 })
 
-app.get('/info', (request, response) => {
-  Person.estimatedDocumentCount({}).then(count => {
-    const date = `<p>${new Date()}</p>`
-    const info = `<p>Puhelinluettelossa on ${count} henkilön tiedot</p>`
-    response.send(info + date)
-  })
+server.on('close', () => {
+  mongoose.connection.close()
 })
 
-app.post('/api/persons', (request, response) => {
-  const body = request.body
-
-  if (body.name === undefined || body.number === undefined) {
-    return response.status(400).json({ error: 'name or number missing' })
-  }
-
-  const person = new Person({
-    name: body.name,
-    number: body.number
-  })
-
-  person.save().then(savedPerson => {
-    response.json(Person.format(savedPerson))
-  })
-})
-
-app.put('/api/persons/:id', (request, response) => {
-  const body = request.body
-
-  const person = {
-    name: body.name,
-    number: body.number
-  }
-
-  Person.findOneAndUpdate({ _id: request.params.id }, person)
-    .then(newPerson => {
-      response.json(Person.format(newPerson))
-    })
-    .catch(error => {
-      console.log(error)
-      response.status(400).send({ error: 'Id not found' })
-    })
-})
-
-app.delete('/api/persons/:id', (request, response) => {
-  Person.findByIdAndRemove(request.params.id)
-    .then(result => {
-      response.status(204).end()
-    })
-    .catch(error => {
-      response.status(400).send({ error: 'Id not found' })
-    })
-})
-
-const PORT = process.env.PORT || 3001
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`)
-})
+module.exports = {
+  app, server
+}
